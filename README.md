@@ -9,7 +9,10 @@
 Install directly from GitHub:
 
 ```bash
-pip install "git+https://github.com/<YOUR-ORG>/<YOUR-REPO>.git"
+pip install "git+https://github.com/LucasSilvaFerreira/crispr_validator.git"
+```
+```bash
+pip install  git+https://github.com/IGVF-DACC/seqspec.git
 ```
 
 After install, the console scripts are:

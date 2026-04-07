@@ -21,6 +21,11 @@ After install, the console scripts are:
 - `seqspec-check`
 - `downloading-from-samplesheet`
 
+Batch report helpers are currently run directly from the repository:
+
+- `python3 igvf_batch_portal_report.py`
+- `python3 render_batch_html_report.py`
+
 Example:
 
 ```bash
@@ -43,7 +48,7 @@ Python dependencies are installed by `pip`, but a few runtime tools are still ex
 - `comparison.html`
 - `analysis_summary.json`
 
-It supports two execution modes.
+It supports three execution modes.
 
 # Quick DACC Guide to Check Already Deposited Samples
 
@@ -75,7 +80,7 @@ Provide your credentials in a JSON file like this:
 
 ```json
 {
-  "Key": "xxxxxx",
+  "key": "xxxxxx",
   "secret": "xxxxxxxxx"
 }
 ```
@@ -106,6 +111,77 @@ Where:
 The workflow also generates HTML reports in the same output directory.
 
 These reports can be helpful for spotting differences between the seqspec definition and the predicted regions.
+
+## Full Portal Batch Report
+
+Use these scripts when you want to run the validator across a full IGVF portal multireport TSV and then render one aggregate HTML summary.
+
+### 1. Run the batch validator
+
+`igvf_batch_portal_report.py` reads a portal multireport TSV, generates a validator-compatible samplesheet for each analysis set, selects one analyzable subset per accession, and runs `seqspec_parser.py samplesheet` for that subset.
+
+Example:
+
+```bash
+python3 igvf_batch_portal_report.py \
+  --input-report test_fetch.tsv \
+  --analysis-root portal_batch_report \
+  --igvf-keypair igvf_key.json \
+  --fresh-run
+```
+
+Useful flags:
+
+- `--accession IGVFDS...` to run only selected accessions; repeat the flag to run several
+- `--limit N` to stop after the first `N` rows in the filtered multireport
+- `--force` to rerun accessions even if `batch_outcome.json` already exists
+- `--fresh-run` to clear `--analysis-root` before starting
+- `--prepare-only --fresh-run` to clear `--analysis-root` and exit without running analyses
+- `--barcode-sample-reads` and `--feature-sample-reads` to tune the read depth passed into `seqspec_parser.py`
+
+Selection behavior:
+
+- If an accession has a shared `scRNA` + `gRNA` lane, that lane is used.
+- Otherwise the script falls back to one representative row per modality (`scRNA`, `gRNA`, optional `hash`) and records that choice in the output report.
+
+Main outputs under `--analysis-root`:
+
+- `report.tsv`: aggregate batch summary table
+- `report.json`: aggregate JSON copy of the same rows
+- `summary.json`: final status counts
+- `<ACCESSION>/batch_outcome.json`: per-accession outcome record
+- `<ACCESSION>/index.html`: per-accession validator index page when analysis completes
+- `<ACCESSION>/logs/*.log`: samplesheet-generation and analysis logs
+
+### 2. Render the aggregate HTML report
+
+`render_batch_html_report.py` turns the batch TSV into a browsable HTML summary with status cards, lab counts, links to accession artifacts, and client-side filtering.
+
+Example:
+
+```bash
+python3 render_batch_html_report.py \
+  --report-tsv portal_batch_report/report.tsv \
+  --title "IGVF Portal Batch Validation Report"
+```
+
+By default this writes the HTML next to the TSV using the same basename, so `portal_batch_report/report.tsv` becomes `portal_batch_report/report.html`.
+
+### 3. Minimal subset run
+
+For a smoke test against one accession:
+
+```bash
+python3 igvf_batch_portal_report.py \
+  --input-report test_fetch.tsv \
+  --analysis-root portal_batch_smoke \
+  --igvf-keypair igvf_key.json \
+  --accession IGVFDS9445RJOU \
+  --fresh-run
+
+python3 render_batch_html_report.py \
+  --report-tsv portal_batch_smoke/report.tsv
+```
 
 
 

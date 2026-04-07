@@ -333,15 +333,25 @@ def fallback_seqspec_path(
 def select_valid_seqspec(
     links: Sequence[str],
     credentials: IGVFCredentials,
+    *,
+    prefer_in_progress: bool = False,
 ) -> Optional[PortalFileReference]:
+    candidates = []
     for link in links:
         obj = portal_json(f"{link}@@object?format=json", credentials)
         status = str(obj.get("status", "")).strip().lower()
         upload_status = str(obj.get("upload_status", "")).strip().lower()
         if status not in ACTIVE_FILE_STATUSES or upload_status != "validated":
             continue
-        return build_file_reference(obj)
-    return None
+        candidates.append(obj)
+
+    if not candidates:
+        return None
+
+    if prefer_in_progress:
+        candidates.sort(key=lambda o: 0 if str(o.get("status", "")).strip().lower() == "in progress" else 1)
+
+    return build_file_reference(candidates[0])
 
 
 def generate_samplesheet_rows(
@@ -353,6 +363,7 @@ def generate_samplesheet_rows(
     sgrna_seqspec: Optional[str] = None,
     stop_after_first_complete_measurement_set: bool = False,
     progress: Optional[Callable[[str], None]] = None,
+    prefer_in_progress_seqspec: bool = False,
 ) -> List[Dict[str, str]]:
     def emit(message: str) -> None:
         if progress:
@@ -427,6 +438,7 @@ def generate_samplesheet_rows(
             seqspec_ref = select_valid_seqspec(
                 [str(link) for link in read1_object.get("seqspecs", [])],
                 credentials,
+                prefer_in_progress=prefer_in_progress_seqspec,
             )
             seqspec_path = ""
             seqspec_accession = ""

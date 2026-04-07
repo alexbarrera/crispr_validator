@@ -288,7 +288,7 @@ def build_file_reference(file_object: Dict[str, object]) -> PortalFileReference:
         raise ValueError(f"Missing accession on IGVF file object: {file_object}")
     url = build_download_url(file_object)
     filename = Path(urlparse(url).path).name
-    md5sum = str(file_object.get("content_md5sum") or file_object.get("md5sum") or "").strip()
+    md5sum = str(file_object.get("md5sum") or "").strip()
     return PortalFileReference(
         accession=accession,
         url=url,
@@ -420,9 +420,9 @@ def generate_samplesheet_rows(
 
         hash_map = None
         if modality == "hash":
-            barcode_map_link = str(file_set.get("barcode_map", "")).strip()
+            barcode_map_link = str(file_set.get("hashtag_barcode_map", "")).strip()
             if not barcode_map_link:
-                raise ValueError(f"Hash modality on {file_set_link} is missing barcode_map.")
+                raise ValueError(f"Hash modality on {file_set_link} is missing hashtag_barcode_map.")
             hash_map = build_file_reference(portal_json(f"{barcode_map_link}@@object?format=json", credentials))
 
         reads_by_key: Dict[tuple[str, str, str, str], Dict[str, Dict[str, object]]] = {}

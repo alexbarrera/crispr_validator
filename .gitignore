@@ -1,6 +1,7 @@
 *fastq.gz
 *.fastq
 *.tsv
+!test_fetch.tsv   
 *.tsv.gz
 *.csv
 *.json

@@ -833,6 +833,8 @@ def canonical_region_name(region_id: str, region_type: str, seqspec_modality: st
     token_text = f"{region_id} {region_type}".lower()
     tokens = set(re.findall(r"[a-z0-9]+", token_text))
     region_type_token = str(region_type).strip().lower()
+    if region_type_token in {"tag", "hash", "hashing", "hto"}:
+        return "hash"
     if "barcode" in tokens:
         return "barcode"
     if "umi" in tokens:

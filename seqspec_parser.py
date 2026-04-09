@@ -294,6 +294,11 @@ def build_parser() -> argparse.ArgumentParser:
     igvf_parser.add_argument("--rna-seqspec", help="Fallback scRNA seqspec path if the portal record lacks one")
     igvf_parser.add_argument("--sgrna-seqspec", help="Fallback gRNA seqspec path if the portal record lacks one")
     igvf_parser.add_argument("--hash-seqspec", help="Fallback hash seqspec path if the portal record lacks one")
+    igvf_parser.add_argument(
+        "--prefer-in-progress-seqspec",
+        action="store_true",
+        help="Prefer 'in progress' configuration_file seqspecs over 'released' ones when multiple are available",
+    )
     add_common_args(igvf_parser)
 
     single_lane_parser = subparsers.add_parser(
@@ -828,6 +833,8 @@ def canonical_region_name(region_id: str, region_type: str, seqspec_modality: st
     token_text = f"{region_id} {region_type}".lower()
     tokens = set(re.findall(r"[a-z0-9]+", token_text))
     region_type_token = str(region_type).strip().lower()
+    if region_type_token in {"tag", "hash", "hashing", "hto"}:
+        return "hash"
     if "barcode" in tokens:
         return "barcode"
     if "umi" in tokens:
@@ -1645,6 +1652,7 @@ def run_igvf_mode(args: argparse.Namespace, analysis_root: Path, env: Dict[str, 
             sgrna_seqspec=args.sgrna_seqspec,
             stop_after_first_complete_measurement_set=args.one_lane,
             progress=lambda message: print(f"IGVF samplesheet: {message}", flush=True),
+            prefer_in_progress_seqspec=args.prefer_in_progress_seqspec,
         )
         write_igvf_samplesheet(rows, samplesheet_path)
     else:
